@@ -27,6 +27,10 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+      redis:
+        image: redis:8.2-alpine3.22
+        ports: 
+          - 6379:6379
 
     steps:
     - uses: actions/checkout@v4
@@ -43,3 +47,4 @@ jobs:
       run: make test
       env:
         DB_CONN: host=localhost user=root password=123456 dbname=ticket port=5432 sslmode=disable
+        REDIS_ADDRESS: 0.0.0.0:6379
