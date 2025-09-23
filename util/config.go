@@ -36,6 +36,9 @@ type Config struct {
 	// Rate limiting config
 	MaxRequest int
 	RefillRate time.Duration
+
+	// Ably API Key
+	AblyAPIKey string
 }
 
 func LoadConfig(path string) *Config {
@@ -56,6 +59,7 @@ func LoadConfig(path string) *Config {
 			GoogleClientSecret:     os.Getenv("GOOGLE_CLIENT_SECRET"),
 			MaxRequest:             100,
 			RefillRate:             time.Second * 10,
+			AblyAPIKey:             os.Getenv("ABLY_API_KEY"),
 		}
 	}
 
@@ -98,5 +102,6 @@ func LoadConfig(path string) *Config {
 		GoogleClientSecret:     os.Getenv("GOOGLE_CLIENT_SECRET"),
 		MaxRequest:             maxRequest,
 		RefillRate:             time.Second * time.Duration(refillRate),
+		AblyAPIKey:             os.Getenv("ABLY_API_KEY"),
 	}
 }
