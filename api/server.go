@@ -3,12 +3,15 @@ package api
 import (
 	"log/slog"
 
-	"github.com/danglnh07/ticket-system/ticket-system/service/mail"
-	"github.com/danglnh07/ticket-system/ticket-system/service/notify"
-	"github.com/danglnh07/ticket-system/ticket-system/service/security"
-	"github.com/danglnh07/ticket-system/ticket-system/service/worker"
-	"github.com/danglnh07/ticket-system/ticket-system/util"
+	_ "github.com/danglnh07/ticket-system/docs"
+	"github.com/danglnh07/ticket-system/service/mail"
+	"github.com/danglnh07/ticket-system/service/notify"
+	"github.com/danglnh07/ticket-system/service/security"
+	"github.com/danglnh07/ticket-system/service/worker"
+	"github.com/danglnh07/ticket-system/util"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 // Server struct, holds the router, dependencies, system config and logger
@@ -49,6 +52,7 @@ func NewServer(
 
 // Helper method to register handler for API
 func (server *Server) RegisterHandler() {
+	// API routes
 	api := server.router.Group("/api")
 	{
 		payment := api.Group("/payment")
@@ -58,7 +62,11 @@ func (server *Server) RegisterHandler() {
 		}
 	}
 
+	// Stripe webhook route
 	server.router.POST("/webhook", server.WebhookHandler)
+
+	// Swagger docs
+	server.router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 }
 
 // Start server

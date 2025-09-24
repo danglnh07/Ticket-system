@@ -9,9 +9,6 @@ import (
 )
 
 type Config struct {
-	// Server config
-	BaseURL string
-
 	// Database config
 	DBConn string
 
@@ -47,7 +44,6 @@ func LoadConfig(path string) *Config {
 	err := godotenv.Load(path)
 	if err != nil {
 		return &Config{
-			BaseURL:                "localhost:8080",
 			DBConn:                 os.Getenv("DB_CONN"),
 			RedisAddr:              os.Getenv("REDIS_ADDRESS"),
 			SMTPHost:               "smtp.gmail.com",
@@ -92,7 +88,6 @@ func LoadConfig(path string) *Config {
 	}
 
 	return &Config{
-		BaseURL:                os.Getenv("BASE_URL"),
 		DBConn:                 os.Getenv("DB_CONN"),
 		RedisAddr:              os.Getenv("REDIS_ADDRESS"),
 		SMTPHost:               os.Getenv("SMTP_HOST"),

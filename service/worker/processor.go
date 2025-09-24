@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"log/slog"
 
-	"github.com/danglnh07/ticket-system/ticket-system/db"
-	"github.com/danglnh07/ticket-system/ticket-system/service/mail"
-	"github.com/danglnh07/ticket-system/ticket-system/service/notify"
+	"github.com/danglnh07/ticket-system/db"
+	"github.com/danglnh07/ticket-system/service/mail"
+	"github.com/danglnh07/ticket-system/service/notify"
 	"github.com/hibiken/asynq"
 )
 

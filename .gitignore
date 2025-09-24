@@ -1,2 +1,3 @@
 # Ignore all .env file
-*.env
+.env.dev
+.env.prod
