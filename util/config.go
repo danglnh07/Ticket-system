@@ -37,8 +37,10 @@ type Config struct {
 	MaxRequest int
 	RefillRate time.Duration
 
-	// Ably API Key
-	AblyAPIKey string
+	// Stripe API key
+	StripePublishableKey string
+	StripeSecretKey      string
+	StripeWebhookSecret  string
 }
 
 func LoadConfig(path string) *Config {
@@ -59,7 +61,9 @@ func LoadConfig(path string) *Config {
 			GoogleClientSecret:     os.Getenv("GOOGLE_CLIENT_SECRET"),
 			MaxRequest:             100,
 			RefillRate:             time.Second * 10,
-			AblyAPIKey:             os.Getenv("ABLY_API_KEY"),
+			StripePublishableKey:   os.Getenv("STRIPE_PUBLISHABLE_KEY"),
+			StripeSecretKey:        os.Getenv("STRIPE_SECRET_KEY"),
+			StripeWebhookSecret:    os.Getenv("STRIPE_WEBHOOK_SECRET"),
 		}
 	}
 
@@ -102,6 +106,8 @@ func LoadConfig(path string) *Config {
 		GoogleClientSecret:     os.Getenv("GOOGLE_CLIENT_SECRET"),
 		MaxRequest:             maxRequest,
 		RefillRate:             time.Second * time.Duration(refillRate),
-		AblyAPIKey:             os.Getenv("ABLY_API_KEY"),
+		StripePublishableKey:   os.Getenv("STRIPE_PUBLISHABLE_KEY"),
+		StripeSecretKey:        os.Getenv("STRIPE_SECRET_KEY"),
+		StripeWebhookSecret:    os.Getenv("STRIPE_WEBHOOK_SECRET"),
 	}
 }

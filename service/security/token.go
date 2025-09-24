@@ -16,7 +16,7 @@ type JWTService struct {
 type TokenType string
 
 const (
-	Issuer = "task-management"
+	Issuer = "ticket-system"
 
 	AccessToken  TokenType = "access-token"
 	RefreshToken TokenType = "refresh-token"
