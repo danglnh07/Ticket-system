@@ -1,0 +1,24 @@
+services:
+  postgres:
+    image: postgres:17.5-alpine3.22
+    ports:
+      - 5433:5432
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ticket
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: 123456
+  redis:
+    image: redis:8.2-alpine3.22
+    ports:
+      - 6378:6379
+  api:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env.prod
+    depends_on:
+      - postgres
+      - redis
