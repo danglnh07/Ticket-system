@@ -3,6 +3,7 @@ package api
 import (
 	"log/slog"
 
+	"github.com/danglnh07/ticket-system/db"
 	_ "github.com/danglnh07/ticket-system/docs"
 	"github.com/danglnh07/ticket-system/service/mail"
 	"github.com/danglnh07/ticket-system/service/notify"
@@ -19,6 +20,9 @@ type Server struct {
 	// API router
 	router *gin.Engine
 
+	// Queries
+	queries *db.Queries
+
 	// Dependencies
 	mailService mail.MailService
 	jwtService  *security.JWTService
@@ -32,6 +36,7 @@ type Server struct {
 
 // Constructor method for server struct
 func NewServer(
+	queries *db.Queries,
 	mailService mail.MailService,
 	jwtService *security.JWTService,
 	distributor worker.TaskDistributor,
@@ -41,6 +46,7 @@ func NewServer(
 ) *Server {
 	return &Server{
 		router:      gin.Default(),
+		queries:     queries,
 		mailService: mailService,
 		jwtService:  jwtService,
 		distributor: distributor,
@@ -52,6 +58,8 @@ func NewServer(
 
 // Helper method to register handler for API
 func (server *Server) RegisterHandler() {
+	server.router.Use(server.CORSMiddleware())
+
 	// API routes
 	api := server.router.Group("/api")
 	{
