@@ -13,7 +13,7 @@ type SendVerifyEmailPayload struct {
 	Link     string `json:"link"`
 }
 
-const SendVerifyEmail = "send-welcome-email"
+const SendVerifyEmail = "send-verify-email"
 
 //go:embed verify_email.html
 var fs embed.FS

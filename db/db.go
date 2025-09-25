@@ -55,25 +55,6 @@ func (queries *Queries) SetCache(ctx context.Context, key string, val string, ex
 	queries.Cache.Set(ctx, key, val, expired)
 }
 
-// Custom error: if redis failed to get cached value
-type RedisInternalErr struct {
-	Message string
-	Err     error
-}
-
-func (err *RedisInternalErr) Error() string {
-	return fmt.Sprintf("%s: %v", err.Message, err.Err)
-}
-
-// Custome error: if key doesn't exist in cache
-type RedisNoValueErr struct {
-	Message string
-}
-
-func (err *RedisNoValueErr) Error() string {
-	return err.Message
-}
-
 // Get cache value
 func (queries *Queries) GetCache(ctx context.Context, key string) (string, error) {
 	val, err := queries.Cache.Get(ctx, key).Result()
@@ -85,9 +66,9 @@ func (queries *Queries) GetCache(ctx context.Context, key string) (string, error
 
 	// If redis error
 	if err != redis.Nil {
-		return "", &RedisInternalErr{Message: "error getting value from redis cache", Err: err}
+		return "", err
 	}
 
 	// If the value of the key simply don't exists, or expired
-	return "", &RedisNoValueErr{"key not exists, or key-value expired"}
+	return "", fmt.Errorf("cache miss")
 }

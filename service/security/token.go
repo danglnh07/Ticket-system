@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/danglnh07/ticket-system/ticket-system/db"
-	"github.com/danglnh07/ticket-system/ticket-system/util"
+	"github.com/danglnh07/ticket-system/db"
+	"github.com/danglnh07/ticket-system/util"
 	"github.com/golang-jwt/jwt/v5"
 )
 

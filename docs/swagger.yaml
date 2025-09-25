@@ -1,0 +1,75 @@
+basePath: /
+definitions:
+  api.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  api.PaymentIntentResponse:
+    properties:
+      secret_key:
+        type: string
+    type: object
+  api.StripeConfigResponse:
+    properties:
+      publishable_key:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: This is the API for ticket and event management system
+  title: Ticket and event management API
+  version: "1.0"
+paths:
+  /api/payment/config:
+    get:
+      description: Get stripe publishable key
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.StripeConfigResponse'
+      security:
+      - BearerAuth: []
+      summary: Get stripe publishable key
+      tags:
+      - payment
+  /api/payment/intent:
+    post:
+      description: Creates a new payment intent with an amount. Here, we expect amount
+        to be in cent
+      parameters:
+      - description: The amount for payment (cents)
+        in: query
+        name: amount
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.PaymentIntentResponse'
+        "400":
+          description: Invalid request body or invalid deadline
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new payment intent
+      tags:
+      - payment
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

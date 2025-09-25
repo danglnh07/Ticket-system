@@ -3,18 +3,25 @@ package api
 import (
 	"log/slog"
 
-	"github.com/danglnh07/ticket-system/ticket-system/service/mail"
-	"github.com/danglnh07/ticket-system/ticket-system/service/notify"
-	"github.com/danglnh07/ticket-system/ticket-system/service/security"
-	"github.com/danglnh07/ticket-system/ticket-system/service/worker"
-	"github.com/danglnh07/ticket-system/ticket-system/util"
+	"github.com/danglnh07/ticket-system/db"
+	_ "github.com/danglnh07/ticket-system/docs"
+	"github.com/danglnh07/ticket-system/service/mail"
+	"github.com/danglnh07/ticket-system/service/notify"
+	"github.com/danglnh07/ticket-system/service/security"
+	"github.com/danglnh07/ticket-system/service/worker"
+	"github.com/danglnh07/ticket-system/util"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 // Server struct, holds the router, dependencies, system config and logger
 type Server struct {
 	// API router
 	router *gin.Engine
+
+	// Queries
+	queries *db.Queries
 
 	// Dependencies
 	mailService mail.MailService
@@ -29,6 +36,7 @@ type Server struct {
 
 // Constructor method for server struct
 func NewServer(
+	queries *db.Queries,
 	mailService mail.MailService,
 	jwtService *security.JWTService,
 	distributor worker.TaskDistributor,
@@ -38,6 +46,7 @@ func NewServer(
 ) *Server {
 	return &Server{
 		router:      gin.Default(),
+		queries:     queries,
 		mailService: mailService,
 		jwtService:  jwtService,
 		distributor: distributor,
@@ -49,6 +58,9 @@ func NewServer(
 
 // Helper method to register handler for API
 func (server *Server) RegisterHandler() {
+	server.router.Use(server.CORSMiddleware())
+
+	// API routes
 	api := server.router.Group("/api")
 	{
 		payment := api.Group("/payment")
@@ -58,7 +70,11 @@ func (server *Server) RegisterHandler() {
 		}
 	}
 
+	// Stripe webhook route
 	server.router.POST("/webhook", server.WebhookHandler)
+
+	// Swagger docs
+	server.router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 }
 
 // Start server

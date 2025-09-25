@@ -7,12 +7,6 @@ createdb:
 dropdb: 
 	sudo docker exec -it postgres17 dropdb ticket
 
-init:
-	sudo docker exec -i postgres17 psql -U root -d ticket < ./db/schema/init.sql
-
-destroy:
-	sudo docker exec -i postgres17 psql -U root -d ticket < ./db/schema/destroy.sql
-
 psql: 
 	sudo docker exec -it postgres17 psql -U root -d ticket
 

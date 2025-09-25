@@ -4,7 +4,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/danglnh07/ticket-system/ticket-system/db"
+	"github.com/danglnh07/ticket-system/db"
 	"github.com/stretchr/testify/require"
 )
 

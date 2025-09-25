@@ -6,19 +6,44 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/danglnh07/ticket-system/ticket-system/service/payment"
+	"github.com/danglnh07/ticket-system/service/payment"
 	"github.com/gin-gonic/gin"
 	"github.com/stripe/stripe-go/v82"
 	"github.com/stripe/stripe-go/v82/webhook"
 )
 
-// Return Stripe publishable key
-func (server *Server) StripeConfig(ctx *gin.Context) {
-	// Return the stripe publishable key as an object the frontend expects
-	ctx.JSON(http.StatusOK, gin.H{"publishableKey": server.config.StripePublishableKey})
+// Stripe config response struct
+type StripeConfigResponse struct {
+	PublishableKey string `json:"publishable_key"`
 }
 
-// Create payment intent
+// StripeConfig godoc
+// @Summary      Get stripe publishable key
+// @Description  Get stripe publishable key
+// @Tags         payment
+// @Produce      json
+// @Success      200      {object}  StripeConfigResponse
+// @Security     BearerAuth
+// @Router       /api/payment/config [get]
+func (server *Server) StripeConfig(ctx *gin.Context) {
+	ctx.JSON(http.StatusOK, StripeConfigResponse{server.config.StripePublishableKey})
+}
+
+type PaymentIntentResponse struct {
+	SecretKey string `json:"secret_key"`
+}
+
+// CreatePaymentIntent godoc
+// @Summary      Create a new payment intent
+// @Description  Creates a new payment intent with an amount. Here, we expect amount to be in cent
+// @Tags         payment
+// @Produce      json
+// @Param        amount  query      int  true  "The amount for payment (cents)"
+// @Success      200      {object}  PaymentIntentResponse
+// @Failure      400      {object}  ErrorResponse      "Invalid request body or invalid deadline"
+// @Failure      500      {object}  ErrorResponse      "Internal server error"
+// @Security     BearerAuth
+// @Router       /api/payment/intent [post]
 func (server *Server) CreatePaymentIntent(ctx *gin.Context) {
 	// Get the amount from query string
 	amount, err := strconv.ParseInt(ctx.Query("amount"), 10, 64)

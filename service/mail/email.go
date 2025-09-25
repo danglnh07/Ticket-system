@@ -5,7 +5,7 @@ import (
 	"net/smtp"
 	"strings"
 
-	"github.com/danglnh07/ticket-system/ticket-system/util"
+	"github.com/danglnh07/ticket-system/util"
 )
 
 // Universal interface for mail service

@@ -1,18 +1,26 @@
+// @title Ticket and event management API
+// @version 1.0
+// @description This is the API for ticket and event management system
+// @host localhost:8080
+// @BasePath /
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 package main
 
 import (
 	"log/slog"
 	"os"
 
-	"github.com/danglnh07/ticket-system/ticket-system/api"
-	"github.com/danglnh07/ticket-system/ticket-system/db"
-	"github.com/danglnh07/ticket-system/ticket-system/service/mail"
-	"github.com/danglnh07/ticket-system/ticket-system/service/notify"
-	"github.com/danglnh07/ticket-system/ticket-system/service/payment"
-	"github.com/danglnh07/ticket-system/ticket-system/service/scheduler"
-	"github.com/danglnh07/ticket-system/ticket-system/service/security"
-	"github.com/danglnh07/ticket-system/ticket-system/service/worker"
-	"github.com/danglnh07/ticket-system/ticket-system/util"
+	"github.com/danglnh07/ticket-system/api"
+	"github.com/danglnh07/ticket-system/db"
+	"github.com/danglnh07/ticket-system/service/mail"
+	"github.com/danglnh07/ticket-system/service/notify"
+	"github.com/danglnh07/ticket-system/service/payment"
+	"github.com/danglnh07/ticket-system/service/scheduler"
+	"github.com/danglnh07/ticket-system/service/security"
+	"github.com/danglnh07/ticket-system/service/worker"
+	"github.com/danglnh07/ticket-system/util"
 	"github.com/hibiken/asynq"
 )
 
@@ -21,7 +29,7 @@ func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 	// Load config
-	config := util.LoadConfig(".env")
+	config := util.LoadConfig(".env.dev")
 
 	// Connect to database and run database migration
 	queries := db.NewQueries()
@@ -58,7 +66,7 @@ func main() {
 	go StartBackgroundProcessor(asynq.RedisClientOpt{Addr: config.RedisAddr}, queries, mailService, hub, logger)
 
 	// Start server
-	server := api.NewServer(mailService, jwtService, distributor, hub, config, logger)
+	server := api.NewServer(queries, mailService, jwtService, distributor, hub, config, logger)
 	if err := server.Start(); err != nil {
 		logger.Error("Failed to start server", "error", err)
 		os.Exit(1)
