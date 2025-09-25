@@ -66,7 +66,7 @@ func main() {
 	go StartBackgroundProcessor(asynq.RedisClientOpt{Addr: config.RedisAddr}, queries, mailService, hub, logger)
 
 	// Start server
-	server := api.NewServer(mailService, jwtService, distributor, hub, config, logger)
+	server := api.NewServer(queries, mailService, jwtService, distributor, hub, config, logger)
 	if err := server.Start(); err != nil {
 		logger.Error("Failed to start server", "error", err)
 		os.Exit(1)

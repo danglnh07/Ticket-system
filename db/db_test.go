@@ -52,7 +52,6 @@ func TestCache(t *testing.T) {
 	time.Sleep(time.Second * 6)
 	val, err = queries.GetCache(t.Context(), key)
 	require.Error(t, err)
-	var target *RedisNoValueErr
-	require.ErrorAs(t, err, &target)
+	require.ErrorContains(t, err, "cache miss")
 	require.Empty(t, val)
 }
