@@ -41,34 +41,28 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Creates a new payment intent with an amount. Here, we expect amount to be in cent",
+                "description": "Creates a refund to a payment intent. Here, we expect a full refund",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "payment"
                 ],
-                "summary": "Create a new payment intent",
+                "summary": "Create a new refund",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "The amount for payment (cents)",
+                        "type": "string",
+                        "description": "The payment intent id",
                         "name": "amount",
-                        "in": "query",
+                        "in": "path",
                         "required": true
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "the refund id",
                         "schema": {
-                            "$ref": "#/definitions/api.PaymentIntentResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request body or invalid deadline",
-                        "schema": {
-                            "$ref": "#/definitions/api.ErrorResponse"
+                            "type": "string"
                         }
                     },
                     "500": {

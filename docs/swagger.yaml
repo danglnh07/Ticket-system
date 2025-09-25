@@ -39,32 +39,27 @@ paths:
       - payment
   /api/payment/intent:
     post:
-      description: Creates a new payment intent with an amount. Here, we expect amount
-        to be in cent
+      description: Creates a refund to a payment intent. Here, we expect a full refund
       parameters:
-      - description: The amount for payment (cents)
-        in: query
+      - description: The payment intent id
+        in: path
         name: amount
         required: true
-        type: integer
+        type: string
       produces:
       - application/json
       responses:
         "200":
-          description: OK
+          description: the refund id
           schema:
-            $ref: '#/definitions/api.PaymentIntentResponse'
-        "400":
-          description: Invalid request body or invalid deadline
-          schema:
-            $ref: '#/definitions/api.ErrorResponse'
+            type: string
         "500":
           description: Internal server error
           schema:
             $ref: '#/definitions/api.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Create a new payment intent
+      summary: Create a new refund
       tags:
       - payment
 securityDefinitions:

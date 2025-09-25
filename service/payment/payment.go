@@ -3,6 +3,7 @@ package payment
 import (
 	"github.com/stripe/stripe-go/v82"
 	"github.com/stripe/stripe-go/v82/paymentintent"
+	"github.com/stripe/stripe-go/v82/refund"
 )
 
 // Set the stripe secret key system-wide for the Stripe SDK to work
@@ -26,4 +27,17 @@ func CreatePaymentIntent(amount int64) (string, error) {
 	}
 
 	return intent.ClientSecret, nil
+}
+
+func CreateRefund(paymentIntentID string) (*stripe.Refund, error) {
+	params := &stripe.RefundParams{
+		PaymentIntent: stripe.String(string(paymentIntentID)),
+	}
+
+	refund, err := refund.New(params)
+	if err != nil {
+		return nil, err
+	}
+
+	return refund, nil
 }
