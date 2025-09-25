@@ -62,7 +62,32 @@ func (server *Server) CreatePaymentIntent(ctx *gin.Context) {
 	}
 
 	// Return the client secret key back as an object the frontend expects
-	ctx.JSON(http.StatusOK, gin.H{"clientSecret": clientSecret})
+	ctx.JSON(http.StatusOK, PaymentIntentResponse{clientSecret})
+}
+
+// Refund godoc
+// @Summary      Create a new refund
+// @Description  Creates a refund to a payment intent. Here, we expect a full refund
+// @Tags         payment
+// @Produce      json
+// @Param        amount  path      string  true  "The payment intent id"
+// @Success      200      {object}  string "the refund id"
+// @Failure      500      {object}  ErrorResponse      "Internal server error"
+// @Security     BearerAuth
+// @Router       /api/payment/intent [post]
+func (server *Server) Refund(ctx *gin.Context) {
+	// Get the payment intent ID from path parameter
+	piID := ctx.Param("piID")
+
+	// Refund
+	refund, err := payment.CreateRefund(piID)
+	if err != nil {
+		server.logger.Error("/api/payment/refund/:piID: failed to create a refund", "error", err)
+		ctx.JSON(http.StatusInternalServerError, ErrorResponse{"Internal server error"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, refund.ID)
 }
 
 // Webhook handler for stripe
