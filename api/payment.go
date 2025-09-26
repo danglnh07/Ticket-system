@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/danglnh07/ticket-system/service/payment"
 	"github.com/gin-gonic/gin"
@@ -17,14 +18,6 @@ type StripeConfigResponse struct {
 	PublishableKey string `json:"publishable_key"`
 }
 
-// StripeConfig godoc
-// @Summary      Get stripe publishable key
-// @Description  Get stripe publishable key
-// @Tags         payment
-// @Produce      json
-// @Success      200      {object}  StripeConfigResponse
-// @Security     BearerAuth
-// @Router       /api/payment/config [get]
 func (server *Server) StripeConfig(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, StripeConfigResponse{server.config.StripePublishableKey})
 }
@@ -33,17 +26,6 @@ type PaymentIntentResponse struct {
 	SecretKey string `json:"secret_key"`
 }
 
-// CreatePaymentIntent godoc
-// @Summary      Create a new payment intent
-// @Description  Creates a new payment intent with an amount. Here, we expect amount to be in cent
-// @Tags         payment
-// @Produce      json
-// @Param        amount  query      int  true  "The amount for payment (cents)"
-// @Success      200      {object}  PaymentIntentResponse
-// @Failure      400      {object}  ErrorResponse      "Invalid request body or invalid deadline"
-// @Failure      500      {object}  ErrorResponse      "Internal server error"
-// @Security     BearerAuth
-// @Router       /api/payment/intent [post]
 func (server *Server) CreatePaymentIntent(ctx *gin.Context) {
 	// Get the amount from query string
 	amount, err := strconv.ParseInt(ctx.Query("amount"), 10, 64)
@@ -65,29 +47,50 @@ func (server *Server) CreatePaymentIntent(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, PaymentIntentResponse{clientSecret})
 }
 
-// Refund godoc
-// @Summary      Create a new refund
-// @Description  Creates a refund to a payment intent. Here, we expect a full refund
-// @Tags         payment
-// @Produce      json
-// @Param        amount  path      string  true  "The payment intent id"
-// @Success      200      {object}  string "the refund id"
-// @Failure      500      {object}  ErrorResponse      "Internal server error"
-// @Security     BearerAuth
-// @Router       /api/payment/intent [post]
+type RefundRequest struct {
+	PaymentIntentID string `json:"piID" binding:"required"`
+	Reason          string `json:"reason" binding:"required"`
+	Amount          int64  `json:"amount" binding:"min=1"`
+}
+
+type RefundResponse struct {
+	ID        string    `json:"id"`
+	Amount    int64     `json:"amount"`
+	CreatedAt time.Time `json:"created_at"`
+	Status    string    `json:"status"`
+}
+
 func (server *Server) Refund(ctx *gin.Context) {
-	// Get the payment intent ID from path parameter
-	piID := ctx.Param("piID")
+	var req RefundRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		server.logger.Warn("POST /api/payment/intent: failed to get request body", "error", err)
+		ctx.JSON(http.StatusBadRequest, ErrorResponse{"Invalid request body"})
+		return
+	}
+
+	// Check if piID exists in database, amount is not exceed the total amount
+
+	// Check if the reason match
+	reason := payment.RefundReason(req.Reason)
+	if reason != payment.Duplicate && reason != payment.Fraudulent && reason != payment.RequestedByCustomer {
+		ctx.JSON(http.StatusBadRequest, ErrorResponse{"invalid reason"})
+		return
+	}
 
 	// Refund
-	refund, err := payment.CreateRefund(piID)
+	refund, err := payment.CreateRefund(req.PaymentIntentID, reason, req.Amount)
 	if err != nil {
-		server.logger.Error("/api/payment/refund/:piID: failed to create a refund", "error", err)
+		server.logger.Error("/api/payment/refund: failed to create a refund", "error", err)
 		ctx.JSON(http.StatusInternalServerError, ErrorResponse{"Internal server error"})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, refund.ID)
+	ctx.JSON(http.StatusOK, RefundResponse{
+		ID:        refund.ID,
+		Amount:    refund.Amount,
+		CreatedAt: time.Unix(0, refund.Created),
+		Status:    string(refund.Status),
+	})
 }
 
 // Webhook handler for stripe

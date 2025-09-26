@@ -67,7 +67,7 @@ func (server *Server) RegisterHandler() {
 		{
 			payment.GET("/config", server.StripeConfig)
 			payment.POST("/intent", server.CreatePaymentIntent)
-			payment.POST("/refund/:piID", server.Refund)
+			payment.POST("/refund", server.Refund)
 		}
 	}
 
