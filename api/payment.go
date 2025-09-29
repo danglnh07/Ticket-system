@@ -94,7 +94,7 @@ func (server *Server) Refund(ctx *gin.Context) {
 }
 
 // Webhook handler for stripe
-func (server *Server) WebhookHandler(ctx *gin.Context) {
+func (server *Server) PaymentWebhookHandler(ctx *gin.Context) {
 	// Read the payload
 	payload, err := io.ReadAll(ctx.Request.Body)
 	if err != nil {

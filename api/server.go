@@ -28,6 +28,7 @@ type Server struct {
 	jwtService  *security.JWTService
 	distributor worker.TaskDistributor
 	hub         *notify.Hub
+	bot         *notify.Chatbot
 
 	// Server's config and logger
 	config *util.Config
@@ -41,6 +42,7 @@ func NewServer(
 	jwtService *security.JWTService,
 	distributor worker.TaskDistributor,
 	hub *notify.Hub,
+	bot *notify.Chatbot,
 	config *util.Config,
 	logger *slog.Logger,
 ) *Server {
@@ -51,6 +53,7 @@ func NewServer(
 		jwtService:  jwtService,
 		distributor: distributor,
 		hub:         hub,
+		bot:         bot,
 		config:      config,
 		logger:      logger,
 	}
@@ -68,11 +71,14 @@ func (server *Server) RegisterHandler() {
 			payment.GET("/config", server.StripeConfig)
 			payment.POST("/intent", server.CreatePaymentIntent)
 			payment.POST("/refund", server.Refund)
+			payment.POST("/webhook", server.PaymentWebhookHandler)
+		}
+
+		bot := api.Group("/bot")
+		{
+			bot.POST("/webhook", server.BotWebhook)
 		}
 	}
-
-	// Stripe webhook route
-	server.router.POST("/webhook", server.WebhookHandler)
 
 	// Swagger docs
 	server.router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

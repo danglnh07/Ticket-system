@@ -61,12 +61,17 @@ func main() {
 		Addr: config.RedisAddr,
 	}, logger)
 	hub := notify.NewHub(logger)
+	bot, err := notify.NewChatbot(config.TelegramKey)
+	if err != nil {
+		logger.Error("Failed to create Telegram bot", "error", err)
+		os.Exit(1)
+	}
 
 	// Start the background server in separate goroutine (since it's will block the main thread)
 	go StartBackgroundProcessor(asynq.RedisClientOpt{Addr: config.RedisAddr}, queries, mailService, hub, logger)
 
 	// Start server
-	server := api.NewServer(queries, mailService, jwtService, distributor, hub, config, logger)
+	server := api.NewServer(queries, mailService, jwtService, distributor, hub, bot, config, logger)
 	if err := server.Start(); err != nil {
 		logger.Error("Failed to start server", "error", err)
 		os.Exit(1)

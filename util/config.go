@@ -38,6 +38,9 @@ type Config struct {
 	StripePublishableKey string
 	StripeSecretKey      string
 	StripeWebhookSecret  string
+
+	// Telegram key
+	TelegramKey string
 }
 
 func LoadConfig(path string) *Config {
@@ -60,6 +63,7 @@ func LoadConfig(path string) *Config {
 			StripePublishableKey:   os.Getenv("STRIPE_PUBLISHABLE_KEY"),
 			StripeSecretKey:        os.Getenv("STRIPE_SECRET_KEY"),
 			StripeWebhookSecret:    os.Getenv("STRIPE_WEBHOOK_SECRET"),
+			TelegramKey:            os.Getenv("TELEGRAM_TOKEN"),
 		}
 	}
 
@@ -104,5 +108,6 @@ func LoadConfig(path string) *Config {
 		StripePublishableKey:   os.Getenv("STRIPE_PUBLISHABLE_KEY"),
 		StripeSecretKey:        os.Getenv("STRIPE_SECRET_KEY"),
 		StripeWebhookSecret:    os.Getenv("STRIPE_WEBHOOK_SECRET"),
+		TelegramKey:            os.Getenv("TELEGRAM_TOKEN"),
 	}
 }
