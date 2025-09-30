@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"net/smtp"
 	"strings"
-
-	"github.com/danglnh07/ticket-system/util"
 )
 
 // Universal interface for mail service
@@ -21,20 +19,23 @@ type EmailService struct {
 	Auth  smtp.Auth
 }
 
-// Constructing method for email service struct
-func NewEmailService(config *util.Config) *EmailService {
+// Constructing method for email service struct.
+// "password" is your app password (https://myaccount.google.com/apppasswords), not your actuall email password.
+func NewEmailService(email, password string) *EmailService {
+	host, port := "smtp.gmail.com", "587"
+
 	// Try simple authentication
-	smtpAuth := smtp.PlainAuth("", config.Email, config.AppPassword, config.SMTPHost)
+	smtpAuth := smtp.PlainAuth("", email, password, host)
 
 	return &EmailService{
-		Host:  config.SMTPHost,
-		Port:  config.SMTPPort,
-		Email: config.Email,
+		Host:  host,
+		Port:  port,
+		Email: email,
 		Auth:  smtpAuth,
 	}
 }
 
-// Method to send email
+// Method to send email, allow for HTML email sending
 func (service *EmailService) SendEmail(to, subject, body string) error {
 	// Set email headers with MIME version and content type
 	headers := make(map[string]string)

@@ -14,7 +14,9 @@ func TestEncodeDecode(t *testing.T) {
 	// Try encoding and decode
 	encode := Encode(str)
 	require.NotEmpty(t, encode)
-	require.Equal(t, str, Decode(encode))
+	decode, err := Decode(encode)
+	require.NoError(t, err)
+	require.Equal(t, str, decode)
 }
 
 func TestBcryptHash(t *testing.T) {

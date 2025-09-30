@@ -3,7 +3,7 @@ package worker
 import (
 	"bytes"
 	"embed"
-	"fmt"
+	"encoding/json"
 	"html/template"
 )
 
@@ -18,11 +18,11 @@ const SendVerifyEmail = "send-verify-email"
 //go:embed verify_email.html
 var fs embed.FS
 
-func (processor *RedisTaskProcessor) SendVerifyEmail(pl any) error {
-	// Check if the payload type is correct
-	payload, ok := pl.(SendVerifyEmailPayload)
-	if !ok {
-		return fmt.Errorf("invalid payload type for this task")
+func (processor *RedisTaskProcessor) SendVerifyEmail(pl []byte) error {
+	// Marshal the payload
+	var payload SendVerifyEmailPayload
+	if err := json.Unmarshal(pl, &payload); err != nil {
+		return err
 	}
 
 	// Prepare the HTML email body
@@ -40,5 +40,6 @@ func (processor *RedisTaskProcessor) SendVerifyEmail(pl any) error {
 	if err != nil {
 		return err
 	}
+	processor.logger.Info("Task process successfully", "task name", SendVerifyEmail)
 	return nil
 }

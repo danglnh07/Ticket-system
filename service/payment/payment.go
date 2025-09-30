@@ -1,14 +1,21 @@
 package payment
 
 import (
+	"os"
+
+	"github.com/danglnh07/ticket-system/util"
 	"github.com/stripe/stripe-go/v82"
 	"github.com/stripe/stripe-go/v82/paymentintent"
 	"github.com/stripe/stripe-go/v82/refund"
 )
 
+/*
+ * Stripe API docs: https://docs.stripe.com/api
+ */
+
 // Set the stripe secret key system-wide for the Stripe SDK to work
-func InitStripe(key string) {
-	stripe.Key = key
+func InitStripe() {
+	stripe.Key = os.Getenv(util.STRIPE_SECRET_KEY)
 }
 
 // Method to create payment intent, return the client secret of the intent, or error

@@ -21,12 +21,12 @@ func Encode(str string) string {
 }
 
 // Method to decode a Base64 URL encoded string
-func Decode(str string) string {
+func Decode(str string) (string, error) {
 	data, err := base64.URLEncoding.DecodeString(str)
 	if err != nil {
-		return ""
+		return "", err
 	}
-	return string(data)
+	return string(data), err
 }
 
 // Methods to hash passwords using bcrypt

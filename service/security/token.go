@@ -5,12 +5,13 @@ import (
 	"time"
 
 	"github.com/danglnh07/ticket-system/db"
-	"github.com/danglnh07/ticket-system/util"
 	"github.com/golang-jwt/jwt/v5"
 )
 
 type JWTService struct {
-	config *util.Config
+	secretKey              []byte
+	TokenExpiration        time.Duration
+	RefreshTokenExpiration time.Duration
 }
 
 type TokenType string
@@ -30,9 +31,11 @@ type CustomClaims struct {
 	jwt.RegisteredClaims           // Embed the JWT Registered claims
 }
 
-func NewJWTService(config *util.Config) *JWTService {
+func NewJWTService(secretKey []byte, tokenExpiration, refreshTokenExpiration time.Duration) *JWTService {
 	return &JWTService{
-		config: config,
+		secretKey:              secretKey,
+		TokenExpiration:        tokenExpiration,
+		RefreshTokenExpiration: refreshTokenExpiration,
 	}
 }
 
@@ -41,9 +44,9 @@ func (service *JWTService) CreateToken(id uint, role db.Role, tokenType TokenTyp
 	var expiration time.Duration
 	switch tokenType {
 	case AccessToken:
-		expiration = service.config.TokenExpiration
+		expiration = service.TokenExpiration
 	case RefreshToken:
-		expiration = service.config.RefreshTokenExpiration
+		expiration = service.RefreshTokenExpiration
 	default:
 		return "", fmt.Errorf("invalid token type")
 	}
@@ -66,7 +69,7 @@ func (service *JWTService) CreateToken(id uint, role db.Role, tokenType TokenTyp
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	// Sign token
-	tokenStr, err := token.SignedString(service.config.SecretKey)
+	tokenStr, err := token.SignedString(service.secretKey)
 	if err != nil {
 		return "", err
 	}
@@ -84,7 +87,7 @@ func (service *JWTService) VerifyToken(signedToken string) (*CustomClaims, error
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return service.config.SecretKey, nil
+		return service.secretKey, nil
 	})
 
 	// Check if token parsing success

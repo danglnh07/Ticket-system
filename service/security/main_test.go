@@ -3,18 +3,16 @@ package security
 import (
 	"os"
 	"testing"
-
-	"github.com/danglnh07/ticket-system/util"
+	"time"
 )
 
 func TestMain(m *testing.M) {
 	// Inject test value instead of loading from .env
-	config := &util.Config{
-		SecretKey:              []byte("SOME-SECRET-KEY"),
-		TokenExpiration:        60,   // 60 minutes = 1 hour
-		RefreshTokenExpiration: 1440, // 1440 minutes = 1 day
-	}
-
-	service = NewJWTService(config)
+	var (
+		SecretKey              = []byte("SOME-SECRET-KEY")
+		TokenExpiration        = 60   // 60 minutes = 1 hour
+		RefreshTokenExpiration = 1440 // 1440 minutes = 1 day
+	)
+	service = NewJWTService(SecretKey, time.Duration(TokenExpiration), time.Duration(RefreshTokenExpiration))
 	os.Exit(m.Run())
 }

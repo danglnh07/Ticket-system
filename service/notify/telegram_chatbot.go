@@ -7,7 +7,13 @@ import (
 	"io"
 	"net/http"
 	"os"
+
+	"github.com/danglnh07/ticket-system/util"
 )
+
+/*
+ * Telegram bot API docs: https://core.telegram.org/bots/api
+ */
 
 type Chatbot struct {
 	server  string
@@ -17,7 +23,7 @@ type Chatbot struct {
 func NewChatbot(token string) (*Chatbot, error) {
 	bot := &Chatbot{
 		server:  "https://api.telegram.org/bot" + token,
-		webhook: fmt.Sprintf("%s/api/bot/webhook", os.Getenv("DOMAIN")),
+		webhook: fmt.Sprintf("%s/api/bot/webhook", os.Getenv(util.DOMAIN)),
 	}
 
 	/*

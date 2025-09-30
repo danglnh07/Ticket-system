@@ -10,6 +10,11 @@ import (
 	"time"
 )
 
+/*
+ * Google Calendar API docs: https://developers.google.com/workspace/calendar/api/v3/reference/events
+ */
+
+// Google Calendar struct
 type GoogleCalendar struct {
 	// Google client ID and client secret
 	ClientID     string
@@ -20,6 +25,7 @@ type GoogleCalendar struct {
 	PopupNoti int
 }
 
+// Google Calendar constructor
 func NewGoogleCalendar(clientID, clientSecret string, emailNoti, popupNoti int) *GoogleCalendar {
 	return &GoogleCalendar{
 		ClientID:     clientID,
@@ -31,7 +37,7 @@ func NewGoogleCalendar(clientID, clientSecret string, emailNoti, popupNoti int) 
 
 // Method to request a new access token for user who use Google login. expireIn count in seconds
 func (calendar *GoogleCalendar) RefreshToken(refreshToken string) (accessToken string, expiredIn int, err error) {
-	// Refresh token
+	// Set query parameters
 	payload := url.Values{}
 	payload.Set("client_id", calendar.ClientID)
 	payload.Set("client_secret", calendar.ClientSecret)
@@ -39,31 +45,32 @@ func (calendar *GoogleCalendar) RefreshToken(refreshToken string) (accessToken s
 	payload.Set("grant_type", "refresh_token")
 	payload.Set("scope", "openid email profile https://www.googleapis.com/auth/calendar.events")
 
+	// Make a POST request to refresh token endpoint
 	resp, err := http.PostForm("https://oauth2.googleapis.com/token", payload)
 	if err != nil {
 		return
 	}
 	defer resp.Body.Close()
 
+	// Check response status code
 	if 200 > resp.StatusCode || resp.StatusCode >= 300 {
 		data, _ := io.ReadAll(resp.Body)
 		fmt.Println("Error message", string(data))
 		return "", 0, fmt.Errorf("request new access token failed: %s", resp.Status)
 	}
 
-	var newToken struct {
-		AccessToken string `json:"access_token"`
-		ExpiresIn   int    `json:"expires_in"` // Seconds
-	}
-	if err = json.NewDecoder(resp.Body).Decode(&newToken); err != nil {
+	// Marshal response to get token and its expiration
+	var data map[string]any
+	if err = json.NewDecoder(resp.Body).Decode(&data); err != nil {
 		return
 	}
 
-	accessToken = newToken.AccessToken
-	expiredIn = newToken.ExpiresIn
+	accessToken = data["access_token"].(string)
+	expiredIn = data["expires_in"].(int)
 	return
 }
 
+// Payload for creating event in Google Calendar
 type CalendarPayload struct {
 	Title       string    `json:"title"`
 	Location    string    `json:"location"`
@@ -73,7 +80,7 @@ type CalendarPayload struct {
 }
 
 // Helper method: create the data for sending to Google Calendar
-func (calendar *GoogleCalendar) CreateEventData(payload CalendarPayload) map[string]any {
+func (calendar *GoogleCalendar) createEventData(payload CalendarPayload) map[string]any {
 	return map[string]any{
 		"summary":     payload.Title,
 		"location":    payload.Location,
@@ -96,99 +103,82 @@ func (calendar *GoogleCalendar) CreateEventData(payload CalendarPayload) map[str
 	}
 }
 
+// Helper method for making request to Google Calendar API.
+// If this is POST request (create event), the string return is the event ID, else it would be an empty string
+func (calendar *GoogleCalendar) makeRequest(method, url, accessToken string, body io.Reader) (string, error) {
+	// Make request to Google calendar API
+	req, err := http.NewRequest(method, url, body)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	// Check response status
+	if 200 > resp.StatusCode || resp.StatusCode >= 300 {
+		// If response status code is 403 (access token expired)
+		if resp.StatusCode == 403 {
+			return "", fmt.Errorf("Access token expired")
+		}
+
+		// Other error
+		message, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("request failed: %s\nMessage: %s", resp.Status, message)
+	}
+
+	// Parse response body. Only POST that we care about the response
+	if method == "POST" {
+		respData := map[string]any{}
+		if err = json.NewDecoder(resp.Body).Decode(&respData); err != nil {
+			return "", err
+		}
+		return respData["id"].(string), nil
+	}
+
+	return "", nil
+}
+
 // Create event in Google Calendar in the primary calendar.
 // The string return is the event ID, which is needed to update/delete it
 func (calendar *GoogleCalendar) CreateEvent(accessToken string, payload CalendarPayload) (string, error) {
 	// Create event data
-	data := calendar.CreateEventData(payload)
+	data := calendar.createEventData(payload)
 
-	// Make request
+	// Make POST request to calendar endpoint
 	body, err := json.Marshal(data)
 	if err != nil {
 		return "", err
 	}
 	url := "https://www.googleapis.com/calendar/v3/calendars/primary/events"
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
 
-	// Check response status
-	if 200 > resp.StatusCode || resp.StatusCode >= 300 {
-		message, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("request failed: %s\nMessage: %s", resp.Status, message)
-	}
-
-	// Read response body and return the event ID (needed for update/delete event)
-	respData := map[string]any{}
-	if err = json.NewDecoder(resp.Body).Decode(&respData); err != nil {
-		return "", err
-	}
-	fmt.Println(resp.Status)
-
-	return respData["id"].(string), nil
+	return calendar.makeRequest("POST", url, accessToken, bytes.NewBuffer(body))
 }
 
 // Update event in Google Calendar
 func (calendar *GoogleCalendar) UpdateEvent(accessToken, eventID string, payload CalendarPayload) error {
 	// Create event data
-	data := calendar.CreateEventData(payload)
+	data := calendar.createEventData(payload)
 
-	// Make request
+	// Make PUT request to calendar endpoint
 	body, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
 	url := fmt.Sprintf("https://www.googleapis.com/calendar/v3/calendars/primary/events/%s", eventID)
-	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(body))
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
 
-	// Check response status
-	if 200 > resp.StatusCode || resp.StatusCode >= 300 {
-		return fmt.Errorf("request failed: %s", resp.Status)
-	}
-	fmt.Println(resp.Status)
-
-	return nil
+	_, err = calendar.makeRequest("PUT", url, accessToken, bytes.NewBuffer(body))
+	return err
 }
 
 // Delete event in Google Calendar
 func (calendar *GoogleCalendar) DeleteEvent(accessToken, eventID string) error {
 	// Make request
 	url := fmt.Sprintf("https://www.googleapis.com/calendar/v3/calendars/primary/events/%s", eventID)
-	req, err := http.NewRequest("DELETE", url, nil)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	// Check response status
-	if 200 > resp.StatusCode || resp.StatusCode >= 300 {
-		return fmt.Errorf("request failed: %s", resp.Status)
-	}
-	fmt.Println(resp.Status)
-
-	return nil
+	_, err := calendar.makeRequest("DELETE", url, accessToken, nil)
+	return err
 }

@@ -2,7 +2,6 @@ package worker
 
 import (
 	"context"
-	"encoding/json"
 	"log/slog"
 
 	"github.com/danglnh07/ticket-system/db"
@@ -14,7 +13,6 @@ import (
 // Task processor interface
 type TaskProcessor interface {
 	Start() error
-	ProcessTask(ctx context.Context, task *asynq.Task, handle func(payload any) error) error
 }
 
 // Redis task processor
@@ -53,25 +51,11 @@ func (processor *RedisTaskProcessor) Start() error {
 	mux := asynq.NewServeMux()
 
 	mux.HandleFunc(SendVerifyEmail, func(ctx context.Context, t *asynq.Task) error {
-		return processor.ProcessTask(ctx, t, processor.SendVerifyEmail)
+		return processor.SendVerifyEmail(t.Payload())
 	})
 	mux.HandleFunc(SendNotification, func(ctx context.Context, t *asynq.Task) error {
-		return processor.ProcessTask(ctx, t, processor.SendNotification)
+		return processor.SendNotification(t.Payload())
 	})
 
 	return processor.server.Start(mux)
-}
-
-func (processor *RedisTaskProcessor) ProcessTask(
-	ctx context.Context,
-	task *asynq.Task,
-	handle func(payload any) error,
-) error {
-	// Unmarshal the payload
-	var payload any
-	if err := json.Unmarshal(task.Payload(), &payload); err != nil {
-		return err
-	}
-
-	return handle(payload)
 }
