@@ -62,7 +62,7 @@ type Account struct {
 	Point uint `json:"point"`
 
 	// OAuth2 credential, include access token and refresh token if integrate with OAuth service
-	OauthProvider     OauthProvider  `json:"oauth_provider"`
+	OauthProvider     sql.NullString `json:"oauth_provider"`
 	OauthProviderID   sql.NullString `json:"oauth_provider_id"`
 	OauthAccessToken  sql.NullString `json:"oauth_access_token"`
 	OauthRefreshToken sql.NullString `json:"oauth_refresh_token"`
@@ -74,15 +74,14 @@ type Account struct {
 type Membership struct {
 	gorm.Model
 
-	// Creator of new membership tier
-	CreatorID uint    `json:"creator_id" gorm:"not null;"`
-	Creator   Account `json:"creator" gorm:"foreignKey:CreatorID"`
-
 	// Tier of the membership: bronze, silver, gold,...
 	Tier string `json:"tier" gorm:"not null"`
 
 	// The minimum point to be at this tier
 	BasePoint uint `json:"base_point" gorm:"not null"`
+
+	// Discount for each tier (in %)
+	Discount uint `json:"discount"`
 }
 
 type Event struct {
@@ -100,6 +99,9 @@ type Event struct {
 	EndTime      time.Time      `json:"end_time" gorm:"not null"`
 	PreviewImage sql.NullString `json:"preview_image"`
 	Status       EventStatus    `json:"status" gorm:"not null"`
+
+	// Google Calendar Event ID
+	CalendarID sql.NullString `json:"calendar_id"`
 }
 
 type Ticket struct {

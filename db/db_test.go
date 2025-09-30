@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/danglnh07/ticket-system/util"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
 )
@@ -15,14 +16,16 @@ var (
 	queries   *Queries
 )
 
+// Entry point for db package test
 func TestMain(m *testing.M) {
-	dbConn = os.Getenv("DB_CONN")
-	redisConn = os.Getenv("REDIS_ADDRESS")
+	dbConn = os.Getenv(util.DB_CONN)
+	redisConn = os.Getenv(util.REDIS_ADDRESS)
 
 	queries = NewQueries()
 	os.Exit(m.Run())
 }
 
+// Test db connection and auto migration
 func TestDB(t *testing.T) {
 	// Test connection
 	err := queries.ConnectDB(dbConn)
@@ -33,6 +36,7 @@ func TestDB(t *testing.T) {
 	require.NoError(t, err)
 }
 
+// Test Redis connection and caching
 func TestCache(t *testing.T) {
 	// Test connection
 	err := queries.ConnectRedis(&redis.Options{

@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/danglnh07/ticket-system/db"
+	"github.com/danglnh07/ticket-system/service/security"
 	"github.com/gin-gonic/gin"
 )
 
@@ -69,6 +71,19 @@ func (server *Server) CORSMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		ctx.Next()
+	}
+}
+
+func (server *Server) AuthorizeMiddleware(role db.Role) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		// Get role from claims
+		claims, _ := ctx.Get(claimsKey)
+		rl := claims.(*security.CustomClaims).Role
+		if rl != role {
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, ErrorResponse{"You have no authorization to perform this action"})
+			return
+		}
 		ctx.Next()
 	}
 }

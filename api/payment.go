@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
 	"github.com/danglnh07/ticket-system/service/payment"
+	"github.com/danglnh07/ticket-system/util"
 	"github.com/gin-gonic/gin"
 	"github.com/stripe/stripe-go/v82"
 	"github.com/stripe/stripe-go/v82/webhook"
@@ -19,7 +21,7 @@ type StripeConfigResponse struct {
 }
 
 func (server *Server) StripeConfig(ctx *gin.Context) {
-	ctx.JSON(http.StatusOK, StripeConfigResponse{server.config.StripePublishableKey})
+	ctx.JSON(http.StatusOK, StripeConfigResponse{os.Getenv(util.STRIPE_PUBLISHABLE_KEY)})
 }
 
 type PaymentIntentResponse struct {
@@ -105,7 +107,7 @@ func (server *Server) PaymentWebhookHandler(ctx *gin.Context) {
 
 	// Construct event
 	event, err := webhook.ConstructEvent(
-		payload, ctx.Request.Header.Get("Stripe-Signature"), server.config.StripeWebhookSecret)
+		payload, ctx.Request.Header.Get("Stripe-Signature"), os.Getenv(util.STRIPE_WEBHOOK_SECRET))
 	if err != nil {
 		server.logger.Error("/webhook: failed to construct event", "error", err)
 		return

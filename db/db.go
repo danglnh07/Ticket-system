@@ -57,18 +57,25 @@ func (queries *Queries) SetCache(ctx context.Context, key string, val string, ex
 
 // Get cache value
 func (queries *Queries) GetCache(ctx context.Context, key string) (string, error) {
-	val, err := queries.Cache.Get(ctx, key).Result()
+	if queries.Cache.Get(ctx, key) != nil {
+		val, err := queries.Cache.Get(ctx, key).Result()
 
-	// If actually found value, return the val
-	if err == nil {
-		return val, nil
+		// If actually found value, return the val
+		if err == nil {
+			return val, nil
+		}
+
+		// If redis error
+		if err != redis.Nil {
+			return "", err
+		}
+
+		// If the value of the key simply don't exists, or expired
+		return "", fmt.Errorf("cache miss")
+
 	}
 
-	// If redis error
-	if err != redis.Nil {
-		return "", err
-	}
+	fmt.Println("Nil")
 
-	// If the value of the key simply don't exists, or expired
-	return "", fmt.Errorf("cache miss")
+	return "", nil
 }

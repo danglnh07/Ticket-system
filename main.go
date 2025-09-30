@@ -11,6 +11,8 @@ package main
 import (
 	"log/slog"
 	"os"
+	"strconv"
+	"time"
 
 	"github.com/danglnh07/ticket-system/api"
 	"github.com/danglnh07/ticket-system/db"
@@ -22,6 +24,7 @@ import (
 	"github.com/danglnh07/ticket-system/service/worker"
 	"github.com/danglnh07/ticket-system/util"
 	"github.com/hibiken/asynq"
+	"github.com/redis/go-redis/v9"
 )
 
 func main() {
@@ -29,12 +32,14 @@ func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 	// Load config
-	config := util.LoadConfig(".env.dev")
+	if err := util.LoadConfig(".env.dev"); err != nil {
+		logger.Error("Error loading configuration", "error", err)
+	}
 
-	// Connect to database and run database migration
+	// Connect to database, run database migration and seed initial data
 	queries := db.NewQueries()
-	if err := queries.ConnectDB(config.DBConn); err != nil {
-		logger.Error("Error connecting to database", "error", err)
+	if err := queries.ConnectDB(os.Getenv(util.DB_CONN)); err != nil {
+		logger.Error("Error connecting to database", "error", err, "db_conn", os.Getenv(util.DB_CONN))
 		os.Exit(1)
 	}
 	if err := queries.AutoMigration(); err != nil {
@@ -42,8 +47,16 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Connect to Redis Cache
+	cacheOpts := redis.Options{
+		Addr:     os.Getenv(util.REDIS_ADDRESS),
+		Password: "", // No password Setup
+		DB:       0,  // Default DB
+	}
+	queries.ConnectRedis(&cacheOpts)
+
 	// Setup stripe secret key globally
-	payment.InitStripe(config.StripeSecretKey)
+	payment.InitStripe()
 
 	// Run the cron
 	s := scheduler.NewScheduler()
@@ -54,24 +67,60 @@ func main() {
 	// Run the cron job in separate goroutine
 	s.RunCronJobs()
 
-	// Create dependencies for server
-	mailService := mail.NewEmailService(config)
-	jwtService := security.NewJWTService(config)
-	distributor := worker.NewRedisTaskDistributor(asynq.RedisClientOpt{
-		Addr: config.RedisAddr,
-	}, logger)
+	/* Create dependencies for server */
+
+	// Create mail service
+	mailService := mail.NewEmailService(os.Getenv(util.SYSTEM_EMAIL), os.Getenv(util.EMAIL_APP_PASSWORD))
+
+	// Create JWT service
+	tokenExpiration, err := strconv.Atoi(os.Getenv(util.TOKEN_EXPIRATION))
+	if err != nil {
+		logger.Error("Invalid value for token expiration. Fall to default value")
+		tokenExpiration = 60
+	}
+
+	refreshTokenExpiration, err := strconv.Atoi(os.Getenv(util.REFRESH_TOKEN_EXPIRATION))
+	if err != nil {
+		logger.Error("Invalid value for refresh token expiration. Fall to default value")
+		refreshTokenExpiration = 1440
+	}
+
+	jwtService := security.NewJWTService(
+		[]byte(os.Getenv(util.SECRET_KEY)),
+		time.Duration(tokenExpiration)*time.Minute,
+		time.Duration(refreshTokenExpiration)*time.Minute)
+
+	// Create the hub
 	hub := notify.NewHub(logger)
-	bot, err := notify.NewChatbot(config.TelegramKey)
+
+	// Create distributor and start processor in the background
+	opts := asynq.RedisClientOpt{Addr: os.Getenv(util.REDIS_ADDRESS)}
+	distributor := worker.NewRedisTaskDistributor(opts, logger)
+	for range 2 {
+		go func() {
+			err := StartBackgroundProcessor(opts, queries, mailService, hub, logger)
+			if err != nil {
+				logger.Error("Task failed", "error", err)
+			}
+		}()
+	}
+
+	// Create Google calendar
+	calendar := notify.NewGoogleCalendar(
+		os.Getenv(util.GOOGLE_CLIENT_ID),
+		os.Getenv(util.GOOGLE_CLIENT_SECRET),
+		45, 60,
+	)
+
+	// Create chatbot
+	bot, err := notify.NewChatbot(os.Getenv(util.TELEGRAM_TOKEN))
 	if err != nil {
 		logger.Error("Failed to create Telegram bot", "error", err)
 		os.Exit(1)
 	}
 
-	// Start the background server in separate goroutine (since it's will block the main thread)
-	go StartBackgroundProcessor(asynq.RedisClientOpt{Addr: config.RedisAddr}, queries, mailService, hub, logger)
-
 	// Start server
-	server := api.NewServer(queries, mailService, jwtService, distributor, hub, bot, config, logger)
+	server := api.NewServer(queries, mailService, jwtService, distributor, calendar, hub, bot, logger)
 	if err := server.Start(); err != nil {
 		logger.Error("Failed to start server", "error", err)
 		os.Exit(1)
