@@ -16,4 +16,7 @@ test:
 run:
 	go run main.go
 
-.PHONY: postgres createdb dropdb init destroy psql test run
+ngrok:
+	sudo docker run --net=host -it -e NGROK_AUTHTOKEN=32PXyfTUHPC79zy78HEwkxIWaF0_4vevWEuVhtT8XSfuswciM ngrok/ngrok:latest http --url=kimberlie-millesimal-muscly.ngrok-free.dev 8080
+
+.PHONY: postgres createdb dropdb init destroy psql test run ngrok
